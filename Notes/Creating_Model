@@ -1,0 +1,7 @@
+# When Creating a model
+
+### What are you inputing, what type or shape is the data?
+
+### What is the model outputting\
+- multiple (n number of outputs) 'Softmax maybe
+- Binary output "sigmoid"

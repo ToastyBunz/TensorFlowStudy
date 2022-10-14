@@ -1,0 +1,352 @@
+# Image Models
+
+## overview
+
+Generators
+- import
+- download dataset
+- split (train, test) files
+- initialize datagen generator
+- initialize train and test generators (using datagen)
+- model (conv, maxP, flatten, Dense)
+- Compile
+- fit
+
+
+numpy from TF (FMNIST MNIST)
+- import form tf.keras.datasets
+- set train, test, train labels, test labels datasets = to dataset
+- normalize 
+- model (they can go strait in because they are numpy arrays)
+- compile
+- fit
+
+normal image files
+- import files
+- set train and test folders
+- iterate over train and test folders and convert to numpy arrays 
+- (you can catagorize by file name and create labels) https://stackoverflow.com/questions/41612057/how-to-add-label-to-image-data-set-for-classification
+- model
+- compile
+- fit (numpy train, numpy train labels)
+
+TGZ files
+- download
+- create datadir (url/directory, filename, untar(needs to be decompressed))
+- set variables
+- set train and val data sets (data dir, val split, subset, seed, image size, batch size)
+- Normalize (greyscale)
+- prefetch
+- model
+- compile
+- fit
+
+
+## Generators (using zipped dataset)
+### Step 1 
+imports
+
+    import os
+    import tensorflow as tf
+    import urllib.request
+    import zipfile
+    from keras.preprocessing.image import ImageDataGenerator
+    import scipy
+    from keras.optimizers import RMSprop
+
+### Step 2
+download files, extract zip, set location to extract train and test datasets, close 
+
+
+    _train_url = 'https://storage.googleapis.com/download.tensorflow.org/data/horse-or-human.zip'
+    _test_url = 'https://storage.googleapis.com/download.tensorflow.org/data/validation-horse-or-human.zip'
+    urllib.request.urlretrieve(_train_url, 'horse-or-human.zip')
+    local_zip = 'horse-or-human.zip'
+    zip_ref = zipfile.ZipFile(local_zip, 'r')
+    zip_ref.extractall('tmp/TrainHoH/')
+    zip_ref.close()
+    urllib.request.urlretrieve(_test_url, 'testdata.zip')
+    local_zip = 'testdata.zip'
+    zip_ref = zipfile.ZipFile(local_zip, 'r')
+    zip_ref.extractall('tmp/TestHoH')
+    zip_ref.close()
+
+
+### Step 3
+Train datagen, rescale is the only essential item, the rest just modify the images to add diversity to dataset
+
+    train_datagen = ImageDataGenerator(
+        rescale=1/255,
+        rotation_range=40,
+        width_shift_range=0.2,
+        height_shift_range=0.2,
+        shear_range=0.2,
+        zoom_range=0.2,
+        horizontal_flip=True,
+        fill_mode='nearest'
+
+### Step 4
+Generators
+This is really the train and test datasets:
+Set the train directory that holds the sub directories.
+Target size reshapes images
+batch size = how many images to guess on before model parameters are updated (if too large just lower to the next square)
+Class mode = binary or categorical
+
+
+    train_generator = train_datagen.flow_from_directory(
+        'E:/pythonProject/TensorReview/TF_Questions/tmp/TrainHoH',
+        target_size=(300, 300),
+        batch_size=32,
+        class_mode='binary'
+    )
+
+    validation_generator = train_datagen.flow_from_directory(
+        'E:/pythonProject/TensorReview/TF_Questions/tmp/TestHoH',
+        target_size=(300, 300),
+        batch_size=32,
+        class_mode='binary'
+    )
+
+### Step 5
+model 
+- Convolutions (convolution + pooling) good practice to start low in filters then increase (more in notes MD)
+- flatten
+- dense (remember 'sigmoid' for binary)
+
+
+    model = tf.keras.models.Sequential([
+        # first layer must have shape (300, 300, 3)
+        #first convolution
+        tf.keras.layers.Conv2D(16, (3, 3), activation='relu', input_shape=(300, 300, 3)),
+        tf.keras.layers.MaxPooling2D(2, 2),
+        #second convolution
+        tf.keras.layers.Conv2D(32, (3, 3), activation='relu'),
+        tf.keras.layers.MaxPooling2D(2, 2),
+        # third convolution
+        tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
+        tf.keras.layers.MaxPooling2D(2, 2),
+        # The fourth convolution
+        tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
+        tf.keras.layers.MaxPooling2D(2, 2),
+        # The fifth convolution
+        tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
+        tf.keras.layers.MaxPooling2D(2, 2),
+        # Flatten the results to feed into a DNN
+        tf.keras.layers.Flatten(),
+        # 512 neuron hidden layer
+        tf.keras.layers.Dense(512, activation='relu'),
+        # Only 1 output neuron. It will contain a value from 0-1 where 0 for 1 class ('horses') and 1 for the other ('humans')
+        tf.keras.layers.Dense(1, activation='sigmoid')
+
+
+### Step 6
+compile
+
+        model.compile(loss='binary_crossentropy',
+                  optimizer='rmsprop',
+                  metrics=['acc'])
+
+
+### Step 7
+fit
+
+    model.fit_generator(
+        train_generator,
+        steps_per_epoch=8,
+        epochs=10,
+        verbose=1,
+        validation_data=validation_generator,
+        validation_steps=8
+    )
+
+
+
+## numpy from TF
+### step 1
+imports
+
+### Step 2
+download images from tf dataset
+
+
+    (train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
+
+### Step 3
+normalize
+
+
+    train_images = train_images / 255.0
+    test_images = test_images / 255.0
+
+
+### Step 4
+model
+simple example (but you can use the more complex one shown above with convolutions)
+
+    model = tf.keras.models.Sequential([
+        tf.keras.layers.Flatten(input_shape=(28, 28)),
+        tf.keras.layers.Dense(128, activation='relu'),
+        tf.keras.layers.Dense(64, activation='relu'),
+        tf.keras.layers.Dense(10, activation=tf.nn.softmax)
+    ])
+
+### Step 5
+
+compile
+
+
+    model.compile(optimizer='Adam',
+                  loss=tf.keras.losses.SparseCategoricalCrossentropy(),
+                  metrics=['accuracy']
+                  )
+
+
+### Step 6
+fit
+
+    model.fit(train_images, train_labels, epochs=5, verbose=2)
+
+
+
+## TGZ file
+### step 1
+imports
+
+    import numpy as np
+    import os
+    import PIL
+    import PIL.Image
+    import tensorflow as tf
+    import tensorflow_datasets as tfds
+    import matplotlib.pyplot as plt
+    import pathlib
+
+### Step 2
+import data
+
+    dataset_url = "https://storage.googleapis.com/download.tensorflow.org/example_images/flower_photos.tgz"
+    
+    data_dir = tf.keras.utils.get_file(origin=dataset_url,
+                                          fname='flower_photos',
+                                          untar=True) # should file be extracted
+
+
+### Step 3
+Create dataset, set parameters and split data
+This will create object tensors that will store each label and value set
+
+    batch_size = 32
+    img_height = 180
+    img_width =180
+    
+    # it is good practice to use a validation split when developing a model (80/20 usually)
+    # Load data off disk
+    # Breaking up training
+    train_ds = tf.keras.utils.image_dataset_from_directory(
+      data_dir,
+      validation_split=0.2,
+      subset="training",
+      seed=123,
+      image_size=(img_height, img_width),
+      batch_size=batch_size)
+    
+    # Breaking up training
+    val_ds = tf.keras.utils.image_dataset_from_directory(
+        data_dir,
+        validation_split = 0.2,
+        subset='validation',
+        seed = 123,
+        image_size=(img_height, img_width),
+        batch_size=batch_size
+    )
+    class_names= train_ds.class_names
+
+
+### Step 4 
+visualize the data 
+
+    plt.figure(figsize=(10, 10))
+    for images, labels in train_ds.take(1):
+        for i in range(9):
+            ax = plt.subplot(3, 3, i + 1)
+            plt.imshow(images[i].numpy().astype('uint8'))
+            plt.title(class_names[labels[i]])
+            plt.axis('off')
+            print('labels', class_names[labels[i]])
+            print('object', labels[i])
+            print('type', type(images))
+    
+    # plt.show()
+    
+    for image_batch, labels_batch in train_ds:
+        print(image_batch.shape)
+        print(labels_batch.shape)
+        break
+
+
+### Step 5
+normalize the data. converts the data from RGB 250-0 to Grayscale 0-1
+
+Two ways to use layer:
+you can apply to dataset by Dataset.map
+or
+you can include the layer inside the model
+
+normalization_layer = tf.keras.layers.Rescaling(1./255)
+
+normalized_ds = train_ds.map(lambda x, y: (normalization_layer(x), y))
+image_batch, labels_batch = next(iter(normalized_ds))
+first_image = image_batch[0]
+
+### Step 6 (optional)
+configure for preformance and memory management
+
+configure the dataset for performance
+buffer prefetching to yield data with out having I/O become blocking.
+Dataset.cache keeps images in memory after they're loaded during first epoch.
+keeps from dataset bottleneck. if dataset is too large to fit into memory
+also option to use this method to create a perfromant on-disk cache.
+Dataset.prefetch overlaps data preprocessing and model execution while training
+
+    AUTOTUNE = tf.data.AUTOTUNE
+    train_ds = train_ds.cache().prefetch(buffer_size=AUTOTUNE)
+    val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE)
+
+### Step 7
+model
+
+num_classes = 5
+
+    model = tf.keras.Sequential([
+        tf.keras.layers.Rescaling(1/255),
+        tf.keras.layers.Conv2D(32, 3, activation='relu'),
+        tf.keras.layers.MaxPooling2D(),
+        tf.keras.layers.Rescaling(1/255),
+        tf.keras.layers.Conv2D(32, 3, activation='relu'),
+        tf.keras.layers.MaxPooling2D(),
+        tf.keras.layers.Rescaling(1/255),
+        tf.keras.layers.Conv2D(32, 3, activation='relu'),
+        tf.keras.layers.MaxPooling2D(),
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(128, activation='relu'),
+        tf.keras.layers.Dense(num_classes)
+    ])
+
+### Step 8
+compile
+
+    model.compile(
+        optimizer='adam',
+        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+        metrics=['accuracy']
+    )
+
+
+### Step 9 
+
+    model.fit(
+        train_ds,
+        validation_data = val_ds,
+        epochs = 3
+    )

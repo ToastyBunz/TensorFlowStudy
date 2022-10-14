@@ -1,0 +1,27 @@
+##Checkpoints
+https://www.tensorflow.org/guide/keras/save_and_serialize
+
+https://www.tensorflow.org/tutorials/keras/save_and_load
+
+They are saves of the weights when training a model.
+- partially trained weights
+- fully trained weights
+
+What are Checkpoint formatted files?
+contain the trained weights in a binary formate.
+- one or more shards that contain your model's weights
+- and index file that indicates which weights s are stored in which shard. 
+
+
+
+### Ways to save model
+- SavedModel
+- HDF5
+  (HDF5 you can load them into TensorFlow.js then train and run them in web browsers or 
+mobile with TensorFlow lite)
+
+tensorflow.js 
+https://www.tensorflow.org/js/tutorials/conversion/import_keras
+
+Tensorflow.js (graph based models)
+https://www.tensorflow.org/js/tutorials/conversion/import_saved_model

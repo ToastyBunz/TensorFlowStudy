@@ -1,0 +1,166 @@
+# Steps for Basic Natural language Model
+
+- set variables
+- download 
+- convert to list
+- split (data, labels)
+- split (train, test)
+- initialize tokenizer (num_num words, oov)
+- initialize tokenizer (fit on texts)
+- 
+
+### Step 1
+Set variables
+- Set Vocab_size or vocab split percentage = int
+- Set embedding dimensions(recommend 16) = int
+- Set max len (characters) of each input = int
+- Set truncated = ('pre' or 'post')
+- Set padding Type = ('pre' or 'post')
+- Set out of variable token = str ('OOV')
+- Set training size (how many of dataset for train) = int
+
+### Step 2
+Collect your data and figure out what kind of data your have.
+
+- txt
+- tar.gz (tarball)
+- .json
+- zip (normal file)
+- premade TF dataset
+
+I am going to assume I have un-split data.\
+Split into training and testing sets.
+
+JSon Example(from TF_Q4):
+
+
+    with open("S:\Python\Code\TensorReview\TF_Questions\sarcasim.json", "r") as f:
+        datastore = json.load(f)
+
+    headlines = []
+    labels = []
+
+    # print(datastore)
+    for item in datastore:
+        headlines.append(item['headline'])
+        labels.append(item['is_sarcastic'])
+
+    # print(labels)
+    trianing_headlines = headlines[0:training_size]
+    testing_headlines = headlines[training_size:]
+    trianing_labels = labels[0:training_size]
+    testing_labels = labels[training_size:]
+
+this can also be done in TF by specifying validation_split. See IMDB file for an example.
+
+### Step 3
+Initialize tokenizer(using vocab_size and oov_token):
+        
+    tokenizer = tf.keras.preprocessing.text.Tokenizer(num_words=vocab_size, oov_token=oov_tok)
+    tokenizer.fit_on_texts(trianing_headlines)
+    
+    word_index = tokenizer.word_index
+
+
+### Step 4
+Apply tokenizer to training and test data:
+
+
+    training_sequences = tokenizer.texts_to_sequences(trianing_headlines)
+    training_padded = tf.keras.utils.pad_sequences(training_sequences,
+                                                   maxlen=max_len,
+                                                   padding=padding_type,
+                                                   truncating=trunc_type)
+
+    testing_sequences = tokenizer.texts_to_sequences(testing_headlines)
+    testing_padded = tf.keras.utils.pad_sequences(testing_sequences,
+                                                  maxlen=max_len,
+                                                  padding=padding_type,
+                                                  truncating=trunc_type)
+
+### Step 5
+Set Callbacks (not necessary but highly recommended)
+
+    callback = keras.callbacks.EarlyStopping(restore_best_weights=True)
+
+### Step 6
+Convert training and testing datasets + labels into numpy arrays for TF
+    
+    training_padded = np.array(training_padded)
+    training_labels = np.array(trianing_labels)
+    testing_padded = np.array(testing_padded)
+    testing_labels = np.array(testing_labels)
+
+### Step 7
+create a Model:
+- Embedding
+- Global average Pooling 1D
+- Dense layers
+- output 
+(watch the activation of the final layer if binary choose "sigmoid", if multiple choose "softmax")
+
+Basic code:
+
+    model = tf.keras.Sequential([
+        tf.keras.layers.Embedding(vocab_size, embedding_dim, input_length=max_len),
+        tf.keras.layers.GlobalAveragePooling1D(),
+        tf.keras.layers.Dense(30, activation='relu'),
+        tf.keras.layers.Dense(24, activation='relu'),
+        tf.keras.layers.Dense(1, activation='sigmoid')
+
+Cooler code:
+
+    model = tf.keras.Sequential([
+        tf.keras.layers.Embedding(vocab_size, embedding_dim, input_length=max_len),
+        tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(32, return_sequences=True)),
+        tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(16, return_sequences=True)),
+        tf.keras.layers.GlobalAveragePooling1D(),
+        tf.keras.layers.Dense(24, activation='relu'),
+        tf.keras.layers.Dense(1, activation='sigmoid')
+
+### Step 8
+Compile:
+- loss (pick according to data, experiment)
+- optimizer (pic according to output, experiment)
+- metrics (make sure this metric matches call backs)
+
+
+
+    model.compile(loss='binary_crossentropy',
+        optimizer='adam',
+        metrics=['accuracy'])
+
+
+### Step 9
+Fit:
+You can set this equal to a variable and graph the training
+- train data
+- train labels
+- epochs
+- validation (test data, test labels)
+- callbacks
+
+
+
+    history = model.fit(training_padded,
+              training_labels,
+              epochs=10,
+              validation_data=(testing_padded, testing_labels),
+              verbose=2,
+              callbacks=[callbacks])
+
+    def plot_loss(history):
+        plt.plot(history.history['loss'], label='loss')
+        plt.plot(history.history['val_loss'], label='val_loss')
+        plt.ylim([0, 10])
+        plt.xlabel('Epoch')
+        plt.ylabel('Error [MPG]')
+        plt.legend()
+        plt.grid(True)
+        plt.show(block=True)
+
+    plot_loss(history)
+
+### Step 10
+Test model on new data:
+"Will add to here at later time"

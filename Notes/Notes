@@ -1,0 +1,199 @@
+# Notes
+
+### General
+lists
+- [start:stop:step]
+- [:] copy whole array
+
+numpy Arrays 
+- [:, :] all rows all columns (they are divided by the comma)
+think of it like this [:::,:::] where the first three are the rows and the second three are columns
+- [:,-1] means all rows of the last column.
+- [:, :-1] means you are taking all the rows of all the columns except the last one.
+
+
+### Verbose -progression bar-
+#### methods: model.fit(), model.evaluate()
+- 0 = silent
+- 1 = shows bar 
+- 2 = No bar but shows epochs
+- Auto = defaults to 1
+#### Note: 2 is reccoomended for production enviornment
+https://www.tensorflow.org/api_docs/python/tf/keras/Model
+
+### Dense(number of nodes, activation, name) 
+- a node layer connected to other nodes
+- it can accept normal inputs, images, embedded nlp, and time sequence outputs from RNNs
+
+
+### Sequential
+- Your model has multiple inputs or multiple outputs
+- Any of your layers has multiple inputs or multiple outputs
+- You need to do layer sharing
+- You want non-linear topology (e.g. a residual connection, a multi-branch model)
+
+### model.summary()
+- you can only use this once model is built
+- but you can build a model incrementally to get around this: Hello world v2
+
+
+## Best practices
+- specify input shape of a sequential model in advance if you know what it is.
+- tf.keras models are optimized to make predictions on batch (multiple at a time)
+so whatever you are predicting on needs to be inside a list
+- normalize data, it makes training more "stable"
+tf.keras.layers.Normalization
+
+### Normalization
+2 common ways to normalize
+- good for mse loss
+
+
+    def normalize_series(data, min, max):
+        # data = float(input(data))
+        data = data - min
+        data = data / max
+        return data
+
+- STANDARDIZATION
+
+
+    def normalize_series(df):
+      train_mean = train_df.mean()
+      train_std = train_df.std()
+      
+      train_df = (train_df - train_mean) / train_std
+      val_df = (val_df - train_mean) / train_std
+      test_df = (test_df - train_mean) / train_std
+
+
+
+## Text Processing
+
+### Standardization -preprocessing txt-
+- removes punctuation or HTML elements
+
+### Tokenization 
+- str to token
+### embedding 
+-gives a vector to a token that can be used for sentiment
+
+## Image Processing
+
+### Convolutions
+convolutions embolden important features in images, using filters. 
+
+    tf.keras.layers.Conv2D(64, (3,3), activation='relu', inputshape=(28,28,1))
+
+- This convolution is 2D which means it is for images (1D is for txt)
+- We are asking keras to generate 64 filters (starts with known good filters)
+- The filers are 3 x 3 pixels
+- 'relu' gets rid of negative value pixels after multiplying them by the fiter
+- input shape is 28 x 28 pixels and in this they are greyscale they are 1 dimension of color
+
+in general it is good practice to increase the number of filters as you go through convolution layers
+and to have a pooling layer after each convolution layer, and before you transition to Dense layers you need to 
+flatten the results so that each node in the dense layer associate with one pixel.
+
+      model = tf.keras.models.Sequential([
+        # first layer must have shape that matched images dimensions E.G.(300, 300, 3)
+        #first convolution
+        tf.keras.layers.Conv2D(16, (3, 3), activation='relu', input_shape=(300, 300, 3)),
+        tf.keras.layers.MaxPooling2D(2, 2),
+        #second convolution
+        tf.keras.layers.Conv2D(32, (3, 3), activation='relu'),
+        tf.keras.layers.MaxPooling2D(2, 2)
+        # third convolution
+        tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
+        tf.keras.layers.MaxPooling2D(2, 2)
+        # Flatten the results to feed into a DNN
+        tf.keras.layers.Flatten(),
+        # 512 neuron hidden layer
+        tf.keras.layers.Dense(512, activation='relu'),
+        # Only 1 output neuron. It will contain a value from 0-1 where 0 for 1 class ('horses') and 1 for the other ('humans')
+        tf.keras.layers.Dense(1, activation='sigmoid')
+
+Notes
+- Convolutions should be odd number pixels wide
+- Convolutions cut of layers of the X and Y where they cannot do calculations.
+  (3,3) convolution on a (28,28) pixel image will lead to a (26, 26) image
+  (5, 5) colvolution on a (128, 128) pixel image will lead to (124, 124) image
+
+### Max Pooling
+compresses images into smaller images, this works with Convolutions because every time you make a
+convolution you are creating more images (that have filters applied) this makes the dataset larger
+compressing the images works in the opposite direction to keep the dataset smaller
+
+    tf.keras.layers.Maxpooling(2,2)
+
+- (2, 2) means that you are averaging the four pixels around the pixel (I think the go right, down and down right)
+there by the image's size is reduced by half (this can be seen in print(model.summary()))
+
+
+## Helpful Shortcuts
+- Shift + Alt + arrow key -- moves line up or down
+- Ctrl + d -- duplicates line 
+
+## dataset.isna().sum()
+- super valuable, finds Not available items in dataframe "na"
+and tells what columns they are in
+- dataset = dataset.dropna() will remove the na items
+- print(train_dataset.describe().transpose())
+
+## Overfitting fixes
+- Get more training data
+- reduce capacity 
+- add weight regularization (L1, L2)
+- Add dropout
+put constraints on the complexity of networks by forcing its weights to only take small values 
+which make the distribution of weight values more regular. Add a loss function that adds a cost to 
+having large weights. L2 is more common 
+1) L1 regularization adds cost that is proportional to abs-val of the weights coefficients.
+  (this pushes wights towards 0 encouraging a sparse model)
+2) L2 adds square of the weights (Will penalize weights without makeing sparse)
+
+
+    layers.Dense(512, activation='elu',
+                 kernel_regularizer=regularizers.l2(0.001),
+                 input_shape=(FEATURES,))
+       
+
+### input / output
+(watch the activation of the final layer if binary choose "sigmoid", if multiple choose "softmax")
+
+Shift + alt + click allows you to edit multiple lines at the same time
+
+
+### RNNs always have and input shape of
+- shape = [batch size, # time steps, # dimensions]
+
+
+### CSV setup
+- if converting a txt to csv and there are ';' instead of ',' use this code
+
+
+      with open('E:\pythonProject\TensorReview\TF_Questions\household_power_consumption.txt') as fobj:
+            with open('E:\pythonProject\TensorReview\TF_Questions\household_power_consumption.csv', 'w') as csv:
+            var = fobj.read()
+            var = var.replace(';', ',')
+            csv.write(var)
+
+- if csv has '?' instead of NaN, it will create each column as an obj not a data type. To fix convert all '?' to 'NaN'
+then save that as a new file and remake the file as a new CSV and load that. 
+
+
+      df = pd.read_csv('E:/pythonProject/TensorReview/TF_Questions/household_power_consumption.csv', nrows=86400)
+      df.replace('?', 'NaN', inplace=True)
+      df.dropna(inplace=True)
+      df.to_csv('E:\pythonProject\TensorReview\TF_Questions\HPC_2.csv')
+      df = pd.read_csv('E:\pythonProject\TensorReview\TF_Questions\HPC_2.csv')
+
+
+### Pandas helpful methods
+- df.replace()
+- df.drop()
+- df.dropna()
+- df.reset_index()
+- df.mean()
+- df.describe() shows count, mean, std, min, 25%, 50%, 75% max
+- df.columns

@@ -1,0 +1,33 @@
+# Text Preprocessing
+
+ prepare the dataset for training
+ standardize(remove punctuation, HTML elements) tokenize(splitting sentances into individual words by splitting
+ on whitespace) and vectorize words (converting words to numbers to associate meaning)
+ all of which can be done with the layer tf.keras.layers.Textvectorization
+
+## defaluts:
+ 
+- standardization converts text to lowercae and removes punctuation
+ (standardize='lower_and_strip_punctuation)
+ 
+- tokenizer splits on whitespace
+- (split='whitespace)
+
+- vectorization is 'int'
+- (output_mode='int')
+- example:
+
+int_vectorize_layer = TextVectorization(
+max_tokens=VOCAB_SIZE,
+output_mode='int',
+output_sequence_length=MAX_SEQUENCE_LENGTH,
+padding='post'
+)
+
+### Standardization -preprocessing txt-
+- removes punctuation or HTML elements
+
+### Tokenization 
+- str to token
+### embedding 
+-gives a vector to a token that can be used for sentiment

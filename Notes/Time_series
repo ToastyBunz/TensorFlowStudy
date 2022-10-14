@@ -1,0 +1,97 @@
+# Time series
+
+#### ALSO FIGURE OUT IF YOU WANT DATE TIME ELEMENTS TO BE YOUR INDEX
+#### important link: https://www.tensorflow.org/tutorials/structured_data/time_series
+
+- multi input, single output, one time-step
+- multi input, single output, multiple time-steps 
+- multiple input, multiple output, multiple time-steps
+
+
+## Steps
+
+- Import libraries
+- Download (probably CSV)
+- Clean data (get rid of any '?', or NaNs)
+- Good idea to plot the data
+- Convert lists into np arrays
+- split arrays into Train, Test
+- Normalize
+- Set Window, Batch, Shuffle_Buffer
+- Create window generator
+- apply window generator to create dataset
+- structure model
+- compile and fit
+
+
+
+
+## Multi-input, Single-Output, One time-step
+
+### Step 1
+like normal start with the imports
+
+
+    import tensorflow as tf
+    import pandas as pd
+    import numpy
+    
+### Step 2 download data
+Usually timeseries data will be in the form of a csv.
+2 ways to deal with that
+- download straight from the internet and extract from a zip
+- download zip to file structure, extract and then reference (this will be my method for this example)
+NOTE these are two different datasets!!
+
+Way one:
+
+    zip_path = tf.keras.utils.get_file(
+    origin='https://storage.googleapis.com/tensorflow/tf-keras-datasets/jena_climate_2009_2016.csv.zip',
+    fname='jena_climate_2009_2016.csv.zip',
+    extract=True
+    )
+    csv_path, _ = os.path.splitext(zip_path)
+    
+    col_list = ['p (mbar)', 'T (degC)', 'Tpot (K)', 'Tdew (degC)', 'rh (%)', 'VPmax (mbar)', 'VPact (mbar)']
+    
+    df = pd.read_csv(csv_path, usecols=col_list, nrows=86400)
+
+Way Two (will be used for rest of example):
+
+    df = pd.read_csv('E:\pythonProject\TensorReview\TF_Questions\HPC_2.csv')
+    df.drop(columns=['Unnamed: 0'], inplace=True)
+
+- infer datetime lets computer know that the first column is a datetime object, 
+- header = 0 tells the computer the first row are titles
+- parse_dates combines the firs and second columns into one datetime column
+- low memory stops the computer form freaking out that we may not have enough ram.
+- This is a dataset that has 7 datapoints take every minute for 4 years! that is 2,102,400 datapoints 
+for the purposes of not sitting here forever we will reduce that to 60 days 86,400 datapoints. 
+
+### Step 3 cleaning data
+
+- Inspect (NaN, erroneous values)
+- remove any obviously erroneous values
+- Remove any data you dont want
+
+Ispect 
+
+print(df.isna().sum()) # finds rows with NaNs
+
+df.describe().transpose()
+
+
+
+
+
+    dataset = tf.data.Dataset.range(11)
+    dataset = dataset.window(8, shift=1, drop_remainder=True)
+    # this code will match the len of each data-window to the len of the smallest one
+    
+    dataset = dataset.flat_map(lambda window: window.batch(8)) # this needs to match the first number in the window
+    dataset = dataset.map(lambda window: (window[:-1], window[-1:]))
+    dataset = dataset.shuffle(buffer_size=10)
+    dataset = dataset.batch(2).prefetch(1)
+    for x, y in dataset:
+        print('x = ', x.numpy())
+        print('y = ', y.numpy())

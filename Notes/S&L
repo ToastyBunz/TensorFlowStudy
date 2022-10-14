@@ -1,0 +1,43 @@
+# Saving and Loading
+
+#### Keras model components
+- The architecture, or configuration, which specifies what layers the model contain, and how they're connected.
+- A set of weights values (the "state of the model").
+- An optimizer (defined by compiling the model).
+- A set of losses and metrics (defined by compiling the model or calling add_loss() or add_metric()).
+
+
+### APIs 
+models can be saved in SavedModel format or H5(older)
+- model.save() defaults to save_format='tf' or model.save(save_format='h5')
+- tf.keras.model.save_model()
+- tf.keras.models.load_model()
+
+
+#### SavedModel file structure
+- architecture and trianing configuration (optimizers, losses. and metrics) are stored in Saved_model.pb
+- weights are saved in the variables directory
+
+### Save_Traces
+- New to TF 2.4
+- argument save_traces has been added to model.save, allows toggle function tracing
+- when save_traces=False all custom objs must define get_config/from_config
+- When loading, custom objs must be passed to the custom_objects argument.
+- save_traces=False rudecs the disk space used by the SavedModel and saving time
+
+
+### Configuration of a sequential model or functional API model
+#### APIs
+- get_config 
+- from_config
+- tf.keras.models.model_to_json()
+- tf.keras.models.model_from_json()
+
+config = model.get_config(). Wil return a dict
+
+tf.keras.layers.Layer.get_weights()
+tf.keras.layers.Layer.set_weights()
+
+
+## Warning
+don't switch between sequential and functional models
